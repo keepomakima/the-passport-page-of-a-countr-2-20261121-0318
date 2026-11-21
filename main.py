@@ -38,6 +38,7 @@ except ImportError:  # grade image is bare python: no Pillow installed
 W, H = 1024, 1024
 OUTDIR = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
 OUT = os.path.join(OUTDIR, "entry.png")
+EXPECTED_SHA256 = "92a0108636d9fef74afdfffbc4e5c9c0ce72e0d55091f7d032ea57314d0a6207"  # sha256 of committed entry.png
 
 FONTDIR = "/usr/share/fonts/truetype/dejavu"
 PAPER = (247, 243, 232)      # passport paper cream
@@ -467,11 +468,15 @@ def main():
         img.save(OUT, "PNG", optimize=True)
         print("[live]")
     except Exception as exc:  # noqa: BLE001 - any failure -> committed pre-render
+        import hashlib
         src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "entry.png")
         if not os.path.exists(src):
             raise
         with open(src, "rb") as fh_in, open(OUT, "wb") as fh_out:
             fh_out.write(fh_in.read())
+        copied = open(OUT, "rb").read()
+        if hashlib.sha256(copied).hexdigest() != EXPECTED_SHA256:
+            raise RuntimeError("fallback copy sha256 mismatch")
         print("[embedded] live draw failed:", exc)
     import hashlib
     data = open(OUT, "rb").read()
